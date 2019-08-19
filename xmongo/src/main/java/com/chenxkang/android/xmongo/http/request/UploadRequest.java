@@ -1,6 +1,7 @@
 package com.chenxkang.android.xmongo.http.request;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.chenxkang.android.xmongo.cache.CacheResult;
 import com.chenxkang.android.xmongo.http.api.ApiManager;
@@ -106,7 +107,15 @@ public class UploadRequest extends BaseHttpRequest<UploadRequest> {
     }
 
     public UploadRequest addFile(String key, File file) {
-        return addFile(key, file, null);
+        if (key == null || file == null) {
+            return this;
+        }
+
+        RequestBody requestBody = RequestBody.create(MediaTypes.IMAGE_TYPE, file);
+        MultipartBody.Part part = MultipartBody.Part.createFormData(key, file.getName(), requestBody);
+        this.multipartBodyParts.add(part);
+
+        return this;
     }
 
     public UploadRequest addFile(String key, File file, UICallback callback) {
@@ -114,6 +123,36 @@ public class UploadRequest extends BaseHttpRequest<UploadRequest> {
             return this;
         }
         RequestBody requestBody = RequestBody.create(MediaTypes.IMAGE_TYPE, file);
+        if (callback != null) {
+            UploadProgressRequestBody uploadProgressRequestBody = new UploadProgressRequestBody(requestBody, callback);
+            MultipartBody.Part part = MultipartBody.Part.createFormData(key, file.getName(), uploadProgressRequestBody);
+            this.multipartBodyParts.add(part);
+        } else {
+            MultipartBody.Part part = MultipartBody.Part.createFormData(key, file.getName(), requestBody);
+            this.multipartBodyParts.add(part);
+        }
+        return this;
+    }
+
+    public UploadRequest addFiles(@Nullable MediaType contentType, Map<String, File> fileMap) {
+        if (fileMap == null) {
+            return this;
+        }
+        for (Map.Entry<String, File> entry : fileMap.entrySet()) {
+            addFile(entry.getKey(), entry.getValue(), contentType);
+        }
+        return this;
+    }
+
+    public UploadRequest addFile(String key, File file, @Nullable MediaType contentType) {
+        return addFile(key, file, contentType, null);
+    }
+
+    public UploadRequest addFile(String key, File file, @Nullable MediaType contentType, UICallback callback) {
+        if (key == null || file == null) {
+            return this;
+        }
+        RequestBody requestBody = RequestBody.create(contentType, file);
         if (callback != null) {
             UploadProgressRequestBody uploadProgressRequestBody = new UploadProgressRequestBody(requestBody, callback);
             MultipartBody.Part part = MultipartBody.Part.createFormData(key, file.getName(), uploadProgressRequestBody);
